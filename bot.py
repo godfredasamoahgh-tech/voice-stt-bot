@@ -48,7 +48,13 @@ def groq_stt(audio, model):
         "https://api.groq.com/openai/v1/audio/transcriptions",
         data=b"".join(parts),
         headers={"Authorization": "Bearer " + GROQ,
-                 "Content-Type": "multipart/form-data; boundary=" + b})
+                 "Content-Type": "multipart/form-data; boundary=" + b,
+                 # Groq sits behind Cloudflare: default Python-urllib UA gets
+                 # banned with 403 "error code: 1010" (browser-signature ban).
+                 # A browser UA makes urllib pass (verified live, 200).
+                 "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                                "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"),
+                 "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=90) as r:
         return json.loads(r.read()).get("text", "")
 
