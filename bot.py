@@ -185,9 +185,9 @@ def panel_kb():
 
 
 def kb_markup(rows):
-    return json.dumps([
+    return json.dumps({"inline_keyboard": [
         [{"text": t, "callback_data": d} for t, d in row] for row in rows
-    ])
+    ]})
 
 
 def send_panel(chat, reply_to=None):
