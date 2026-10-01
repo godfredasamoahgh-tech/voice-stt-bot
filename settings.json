@@ -1,4 +1,4 @@
 {
-  "delete_telegram_voice": true,
+  "delete_telegram_voice": false,
   "model_mode": "auto"
 }
