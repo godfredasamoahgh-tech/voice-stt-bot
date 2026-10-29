@@ -258,6 +258,42 @@ def handle_callback(q):
 
 # ---------------- message handling ----------------
 
+
+
+def send_long_message(chat, text, reply_to=None):
+    """Split and deliver messages longer than Telegram's 4096 character limit."""
+    chunk_limit = 4000
+    if len(text) <= chunk_limit:
+        params = {"chat_id": chat, "text": text}
+        if reply_to:
+            params["reply_to_message_id"] = reply_to
+        return tg("sendMessage", params)
+
+    chunks = []
+    lines = text.split("\n")
+    cur_chunk = ""
+    for line in lines:
+        if len(cur_chunk) + len(line) + 1 > chunk_limit:
+            if cur_chunk:
+                chunks.append(cur_chunk.strip())
+                cur_chunk = ""
+            while len(line) > chunk_limit:
+                chunks.append(line[:chunk_limit])
+                line = line[chunk_limit:]
+            cur_chunk = line
+        else:
+            cur_chunk += ("\n" if cur_chunk else "") + line
+    if cur_chunk.strip():
+        chunks.append(cur_chunk.strip())
+
+    for i, c in enumerate(chunks):
+        params = {"chat_id": chat, "text": c}
+        if i == 0 and reply_to:
+            params["reply_to_message_id"] = reply_to
+        tg("sendMessage", params)
+        time.sleep(0.3)
+    return {"ok": True}
+
 def handle(m):
     if m.get("text", "").startswith("/panel") and not m.get("voice"):
         chat = m["chat"]["id"]
@@ -353,7 +389,7 @@ def handle(m):
         return
     reply = transcript if transcript.strip() else "(no speech detected)"
     try:
-        tg("sendMessage", {"chat_id": chat, "text": reply, "reply_to_message_id": mid})
+        send_long_message(chat, reply, reply_to=mid)
     except Exception as e:
         log("reply_fail", chat, type(e).__name__)
     deleted = "off"
